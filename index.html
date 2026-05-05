@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LostIt — Campus Lost &amp; Found Portal</title>
+  <meta name="description" content="Report and browse lost or found items on campus. A community-driven portal to reunite people with their belongings." />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar" id="navbar">
+    <div class="brand">LostIt <span>— Campus Lost &amp; Found</span></div>
+    <div class="nav-links" id="nav-links">
+      <button class="active" data-view="browse" id="nav-browse">Browse Listings</button>
+      <button data-view="report" id="nav-report">Report an Item</button>
+      <button data-view="admin" id="nav-admin">Admin Panel</button>
+      <button class="nav-logout" id="nav-logout">Logout</button>
+    </div>
+  </nav>
+
+  <!-- Toast container -->
+  <div id="toast-container"></div>
+
+  <!-- Login View -->
+  <section class="view active" id="view-login">
+    <div class="login-card">
+      <div class="login-header">
+        <h2>Welcome to LostIt</h2>
+        <p>Sign in to access the portal.</p>
+      </div>
+      <form id="login-form" class="login-form">
+        <div class="form-group">
+          <label for="login-username">Username</label>
+          <input type="text" id="login-username" placeholder="e.g. ajohnson" required />
+        </div>
+        <div class="form-group">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" placeholder="Enter your password" required />
+        </div>
+        <div class="form-group">
+          <label for="login-role">Access Type</label>
+          <select id="login-role">
+            <option value="user">User (Browse + Report)</option>
+            <option value="admin">Admin (Admin Panel)</option>
+          </select>
+        </div>
+        <button type="submit" class="submit-btn">Continue</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Browse View -->
+  <section class="view" id="view-browse">
+    <div class="browse-controls">
+      <input type="text" class="search-box" id="search-input" placeholder="🔍  Search items by name..." />
+      <div class="filter-group" id="status-filters">
+        <button class="filter-btn active" data-status="All">All</button>
+        <button class="filter-btn" data-status="Lost">Lost</button>
+        <button class="filter-btn" data-status="Found">Found</button>
+        <button class="filter-btn" data-status="Claimed">Claimed</button>
+      </div>
+      <select class="cat-select" id="cat-filter">
+        <option value="All">All Categories</option>
+        <option>Electronics</option><option>ID/Cards</option><option>Keys</option>
+        <option>Clothing</option><option>Books</option><option>Other</option>
+      </select>
+    </div>
+    <div class="cards-grid" id="cards-grid"></div>
+  </section>
+
+  <!-- Report View -->
+  <section class="view" id="view-report">
+    <div class="form-card">
+      <h2>📋 Report a Lost or Found Item</h2>
+      <form id="report-form">
+        <div class="form-group">
+          <label for="f-name">Your Name *</label>
+          <input type="text" id="f-name" required readonly />
+        </div>
+        <div class="form-group">
+          <label for="f-contact">Contact Info (email or phone) *</label>
+          <input type="text" id="f-contact" required placeholder="e.g. alex@university.edu" />
+        </div>
+        <div class="form-group">
+          <label for="f-item">Item Name *</label>
+          <input type="text" id="f-item" required placeholder="e.g. Blue Backpack" />
+        </div>
+        <div class="form-group">
+          <label for="f-category">Category</label>
+          <select id="f-category">
+            <option>Electronics</option><option>ID/Cards</option><option>Keys</option>
+            <option>Clothing</option><option>Books</option><option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Status *</label>
+          <div class="radio-group">
+            <label><input type="radio" name="status" value="Lost" checked /> Lost</label>
+            <label><input type="radio" name="status" value="Found" /> Found</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="f-desc">Description (optional)</label>
+          <textarea id="f-desc" placeholder="Any additional details about the item..."></textarea>
+        </div>
+        <button type="submit" class="submit-btn" id="submit-btn">Submit Report</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Admin View -->
+  <section class="view" id="view-admin">
+    <h1 class="admin-heading">🛡️ Admin Panel — Manage All Reports</h1>
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h2>Create User</h2>
+        <button type="button" class="btn btn-accent" id="create-user-toggle">Create User</button>
+      </div>
+      <form id="create-user-form" class="admin-form is-collapsed">
+        <div class="form-group">
+          <label for="cu-username">Username *</label>
+          <input type="text" id="cu-username" required placeholder="e.g. newadmin" />
+        </div>
+        <div class="form-group">
+          <label for="cu-password">Password *</label>
+          <input type="password" id="cu-password" required placeholder="Create a strong password" />
+        </div>
+        <div class="form-group">
+          <label for="cu-role">Role *</label>
+          <select id="cu-role" required>
+            <option value="admin">Admin</option>
+            <option value="user">User</option>
+          </select>
+        </div>
+        <button type="submit" class="submit-btn">Create User</button>
+      </form>
+    </div>
+    <div class="table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr><th>Item Name</th><th>Category</th><th>Status</th><th>Reported By</th><th>Contact</th><th>Date</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="admin-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+<script>
+/* ── State ── */
+const API_BASE = 'http://localhost:3000/api';
+const API = `${API_BASE}/items`;
+const AUTH_API = `${API_BASE}/auth`;
+let allItems = [];
+let activeStatus = 'All';
+let activeCat = 'All';
+let searchTerm = '';
+let currentRole = sessionStorage.getItem('role');
+let currentName = sessionStorage.getItem('name');
+let currentToken = sessionStorage.getItem('token');
+
+/* ── Toast ── */
+function showToast(msg, type = 'success') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => { el.style.animation = 'slideOut .35s forwards'; setTimeout(() => el.remove(), 400); }, 3000);
+}
+
+function authHeaders() {
+  return currentToken ? { Authorization: `Bearer ${currentToken}` } : {};
+}
+
+/* ── Navigation ── */
+document.querySelectorAll('.nav-links button[data-view]').forEach(btn => {
+  btn.addEventListener('click', () => switchView(btn.dataset.view));
+});
+
+document.getElementById('nav-logout').addEventListener('click', () => {
+  sessionStorage.removeItem('role');
+  sessionStorage.removeItem('name');
+  sessionStorage.removeItem('token');
+  currentRole = null;
+  currentName = null;
+  currentToken = null;
+  applyRoleUI();
+});
+
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  const role = document.getElementById('login-role').value;
+
+  try {
+    const res = await fetch(`${AUTH_API}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password, role }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    currentRole = data.role;
+    currentName = data.username;
+    currentToken = data.token;
+    sessionStorage.setItem('role', currentRole);
+    sessionStorage.setItem('name', currentName);
+    sessionStorage.setItem('token', currentToken);
+    applyRoleUI();
+  } catch (err) {
+    console.error('Login error:', err);
+    showToast('Login failed. Check your credentials.', 'error');
+  }
+});
+
+document.getElementById('create-user-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const username = document.getElementById('cu-username').value.trim();
+  const password = document.getElementById('cu-password').value;
+  const role = document.getElementById('cu-role').value;
+
+  try {
+    const res = await fetch(`${AUTH_API}/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ username, password, role }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    showToast('User created successfully.');
+    e.target.reset();
+  } catch (err) {
+    console.error('Create user error:', err);
+    showToast('Failed to create user.', 'error');
+  }
+});
+
+document.getElementById('create-user-toggle').addEventListener('click', () => {
+  const form = document.getElementById('create-user-form');
+  form.classList.toggle('is-collapsed');
+});
+
+function switchView(view) {
+  if (!canAccessView(view)) {
+    showToast('Access denied for this role', 'error');
+    return;
+  }
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(`view-${view}`).classList.add('active');
+  document.querySelectorAll('.nav-links button').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-view="${view}"]`).classList.add('active');
+  if (view === 'browse') renderCards();
+  if (view === 'admin') renderAdmin();
+}
+
+function canAccessView(view) {
+  if (!currentRole) return view === 'login';
+  if (currentRole === 'admin') return view === 'admin';
+  return view === 'browse' || view === 'report';
+}
+
+function applyRoleUI() {
+  const navLinks = document.getElementById('nav-links');
+  const logoutBtn = document.getElementById('nav-logout');
+  const navBrowse = document.getElementById('nav-browse');
+  const navReport = document.getElementById('nav-report');
+  const navAdmin = document.getElementById('nav-admin');
+
+  if (!currentRole) {
+    navLinks.classList.add('hidden');
+    logoutBtn.classList.add('hidden');
+    switchView('login');
+    return;
+  }
+
+  const nameField = document.getElementById('f-name');
+  if (nameField) {
+    nameField.value = currentName || '';
+  }
+
+  navLinks.classList.remove('hidden');
+  logoutBtn.classList.remove('hidden');
+
+  if (currentRole === 'admin') {
+    navBrowse.classList.add('hidden');
+    navReport.classList.add('hidden');
+    navAdmin.classList.remove('hidden');
+    switchView('admin');
+    return;
+  }
+
+  navBrowse.classList.remove('hidden');
+  navReport.classList.remove('hidden');
+  navAdmin.classList.add('hidden');
+  switchView('browse');
+}
+
+/* ── Fetch items ── */
+async function fetchItems() {
+  try {
+    const res = await fetch(API);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    allItems = await res.json();
+  } catch (err) {
+    console.error('Fetch error:', err);
+    allItems = [];
+  }
+  renderCards();
+}
+
+/* ── Render cards ── */
+function renderCards() {
+  const filtered = allItems.filter(item => {
+    if (activeStatus !== 'All' && item.status !== activeStatus) return false;
+    if (activeCat !== 'All' && item.category !== activeCat) return false;
+    if (searchTerm && !item.itemName.toLowerCase().includes(searchTerm)) return false;
+    return true;
+  });
+  const grid = document.getElementById('cards-grid');
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>No items found matching your filters.</p></div>';
+    return;
+  }
+  grid.innerHTML = filtered.map(item => {
+    const statusClass = item.status === 'Lost' ? 'badge-lost' : item.status === 'Found' ? 'badge-found' : 'badge-claimed';
+    const isClaimed = item.status === 'Claimed';
+    const isOwner = currentName && item.reporterName === currentName;
+    const canManage = currentRole === 'admin' || isOwner;
+    const date = item.dateReported ? new Date(item.dateReported).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+    return `<div class="card">
+      <div class="card-header">
+        <span class="card-title">${esc(item.itemName)}</span>
+        <span class="badge ${statusClass}">${esc(item.status)}</span>
+      </div>
+      <span class="badge badge-cat">${esc(item.category)}</span>
+      <div class="card-meta">
+        <strong>Date:</strong> ${date}<br/>
+        <strong>Reported by:</strong> ${esc(item.reporterName)}<br/>
+        <strong>Contact:</strong> ${esc(item.contactInfo)}
+        ${item.description ? `<br/><strong>Note:</strong> ${esc(item.description)}` : ''}
+      </div>
+      ${canManage ? `<div class="card-actions">
+        <button class="btn btn-accent" onclick="markClaimed('${item._id}')" ${isClaimed ? 'disabled' : ''}>
+          ${isClaimed ? '✓ Claimed' : 'Mark as Claimed'}
+        </button>
+        <button class="btn btn-danger" onclick="deleteItem('${item._id}')">Delete</button>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function esc(str) { const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; }
+
+/* ── Admin render ── */
+function renderAdmin() {
+  const tbody = document.getElementById('admin-tbody');
+  if (!allItems.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:2rem">No records found.</td></tr>'; return; }
+  tbody.innerHTML = allItems.map(item => {
+    const statusClass = item.status === 'Lost' ? 'badge-lost' : item.status === 'Found' ? 'badge-found' : 'badge-claimed';
+    const isClaimed = item.status === 'Claimed';
+    const isOwner = currentName && item.reporterName === currentName;
+    const canManage = currentRole === 'admin' || isOwner;
+    const date = item.dateReported ? new Date(item.dateReported).toLocaleDateString() : '—';
+    return `<tr>
+      <td>${esc(item.itemName)}</td><td>${esc(item.category)}</td>
+      <td><span class="badge ${statusClass}">${esc(item.status)}</span></td>
+      <td>${esc(item.reporterName)}</td><td>${esc(item.contactInfo)}</td><td>${date}</td>
+      <td style="display:flex;gap:6px">
+        ${canManage ? `<button class="btn btn-accent" onclick="markClaimed('${item._id}')" ${isClaimed ? 'disabled' : ''} style="padding:6px 12px;font-size:.78rem">${isClaimed ? '✓ Claimed' : 'Claim'}</button>
+        <button class="btn btn-danger" onclick="deleteItem('${item._id}')" style="padding:6px 12px;font-size:.78rem">Delete</button>` : '<span style="color:var(--text-muted)">No actions available</span>'}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── Actions ── */
+async function markClaimed(id) {
+  try {
+    const res = await fetch(`${API}/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ status: 'Claimed' }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    showToast('Item marked as claimed!');
+    await fetchItems();
+    renderAdmin();
+  } catch (err) { console.error('Mark claimed error:', err); showToast('Failed to update item', 'error'); }
+}
+
+async function deleteItem(id) {
+  if (!confirm('Delete this item permanently?')) return;
+  try {
+    const res = await fetch(`${API}/${id}`, {
+      method: 'DELETE',
+      headers: { ...authHeaders() },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    showToast('Item deleted.');
+    await fetchItems();
+    renderAdmin();
+  } catch (err) { console.error('Delete error:', err); showToast('Failed to delete item', 'error'); }
+}
+
+/* ── Report form ── */
+document.getElementById('report-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!currentName) {
+    showToast('Please login before reporting.', 'error');
+    return;
+  }
+  const body = {
+    contactInfo: document.getElementById('f-contact').value.trim(),
+    itemName: document.getElementById('f-item').value.trim(),
+    category: document.getElementById('f-category').value,
+    status: document.querySelector('input[name="status"]:checked').value,
+    description: document.getElementById('f-desc').value.trim(),
+  };
+  try {
+    const res = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    showToast('Report submitted!');
+    e.target.reset();
+    const nameField = document.getElementById('f-name');
+    if (nameField) nameField.value = currentName || '';
+    await fetchItems();
+    switchView('browse');
+  } catch (err) { console.error('Submit error:', err); showToast('Failed to submit report', 'error'); }
+});
+
+/* ── Filters ── */
+document.getElementById('search-input').addEventListener('input', (e) => { searchTerm = e.target.value.toLowerCase(); renderCards(); });
+document.querySelectorAll('#status-filters .filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#status-filters .filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeStatus = btn.dataset.status;
+    renderCards();
+  });
+});
+document.getElementById('cat-filter').addEventListener('change', (e) => { activeCat = e.target.value; renderCards(); });
+
+/* ── Init ── */
+applyRoleUI();
+fetchItems();
+</script>
+</body>
+</html>
