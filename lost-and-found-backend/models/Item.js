@@ -15,6 +15,9 @@ const itemSchema = new mongoose.Schema({
     default: 'Lost',
   },
   description: { type: String, default: '' },
+  claimedBy: { type: String, default: '' },
+  claimedContact: { type: String, default: '' },
+  claimedOn: { type: Date, default: null },
   dateReported: { type: Date, default: Date.now },
 });
 

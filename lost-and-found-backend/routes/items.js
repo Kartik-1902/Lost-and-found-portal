@@ -40,6 +40,25 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.get('/mine', async (req, res) => {
+  try {
+    const rawName = req.query.name || '';
+    const name = rawName.trim();
+    if (!name) {
+      return res.status(400).json({ error: 'Name query param required' });
+    }
+
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const items = await Item.find({ reporterName: { $regex: new RegExp(`^${escaped}$`, 'i') } })
+      .sort({ dateReported: -1 });
+
+    return res.status(200).json(items);
+  } catch (err) {
+    console.error('Fetch my reports error:', err);
+    return res.status(500).json({ error: 'Failed to fetch reports' });
+  }
+});
+
 router.put('/:id', requireAuth, async (req, res) => {
   try {
     const requester = req.user?.username;

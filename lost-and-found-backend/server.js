@@ -5,6 +5,7 @@ const cors = require('cors');
 
 const authRouter = require('./routes/auth');
 const itemsRouter = require('./routes/items');
+const claimsRouter = require('./routes/claims');
 
 const app = express();
 
@@ -24,6 +25,7 @@ mongoose
 
 app.use('/api/items', itemsRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/claims', claimsRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
