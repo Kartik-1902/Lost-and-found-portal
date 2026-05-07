@@ -15,6 +15,7 @@
     <div class="brand">FindX <span>— Campus Lost &amp; Found</span></div>
     <div class="nav-links" id="nav-links">
       <button class="active" data-view="browse" id="nav-browse">Browse Listings</button>
+      <button data-view="my-reports" id="nav-my-reports">My Reports</button>
       <button data-view="report" id="nav-report">Report an Item</button>
       <button data-view="admin" id="nav-admin">Admin Panel</button>
       <button class="nav-logout" id="nav-logout">Logout</button>
@@ -69,6 +70,18 @@
       </select>
     </div>
     <div class="cards-grid" id="cards-grid"></div>
+  </section>
+
+  <!-- My Reports View -->
+  <section class="view" id="view-my-reports">
+    <div id="my-reports-results" style="display:none;">
+      <div class="browse-controls">
+        <button class="filter-btn" id="my-reports-back">← Back to Browse</button>
+      </div>
+      <h2 class="admin-heading" id="my-reports-heading">My Reports</h2>
+      <div class="empty-state" id="my-reports-empty" style="display:none;">No reports found under this name.</div>
+      <div class="cards-grid" id="my-reports-cards"></div>
+    </div>
   </section>
 
   <!-- Report View -->
@@ -160,6 +173,8 @@ let searchTerm = '';
 let currentRole = sessionStorage.getItem('role');
 let currentName = sessionStorage.getItem('name');
 let currentToken = sessionStorage.getItem('token');
+let myReportsName = '';
+let myReportsItems = [];
 
 /* ── Toast ── */
 function showToast(msg, type = 'success') {
@@ -186,6 +201,8 @@ document.getElementById('nav-logout').addEventListener('click', () => {
   currentRole = null;
   currentName = null;
   currentToken = null;
+  myReportsName = '';
+  myReportsItems = [];
   applyRoleUI();
 });
 
@@ -242,6 +259,10 @@ document.getElementById('create-user-toggle').addEventListener('click', () => {
   form.classList.toggle('is-collapsed');
 });
 
+document.getElementById('my-reports-back').addEventListener('click', () => {
+  switchView('browse');
+});
+
 function switchView(view) {
   if (!canAccessView(view)) {
     showToast('Access denied for this role', 'error');
@@ -252,19 +273,27 @@ function switchView(view) {
   document.querySelectorAll('.nav-links button').forEach(b => b.classList.remove('active'));
   document.querySelector(`[data-view="${view}"]`).classList.add('active');
   if (view === 'browse') renderCards();
+  if (view === 'my-reports') {
+    if (!currentName) {
+      showToast('Please login to view your reports.', 'error');
+      return;
+    }
+    fetchMyReports(currentName);
+  }
   if (view === 'admin') renderAdmin();
 }
 
 function canAccessView(view) {
   if (!currentRole) return view === 'login';
   if (currentRole === 'admin') return view === 'admin';
-  return view === 'browse' || view === 'report';
+  return view === 'browse' || view === 'report' || view === 'my-reports';
 }
 
 function applyRoleUI() {
   const navLinks = document.getElementById('nav-links');
   const logoutBtn = document.getElementById('nav-logout');
   const navBrowse = document.getElementById('nav-browse');
+  const navMyReports = document.getElementById('nav-my-reports');
   const navReport = document.getElementById('nav-report');
   const navAdmin = document.getElementById('nav-admin');
 
@@ -285,6 +314,7 @@ function applyRoleUI() {
 
   if (currentRole === 'admin') {
     navBrowse.classList.add('hidden');
+    navMyReports.classList.add('hidden');
     navReport.classList.add('hidden');
     navAdmin.classList.remove('hidden');
     switchView('admin');
@@ -292,6 +322,7 @@ function applyRoleUI() {
   }
 
   navBrowse.classList.remove('hidden');
+  navMyReports.classList.remove('hidden');
   navReport.classList.remove('hidden');
   navAdmin.classList.add('hidden');
   switchView('browse');
@@ -340,6 +371,7 @@ function renderCards() {
         <strong>Reported by:</strong> ${esc(item.reporterName)}<br/>
         <strong>Contact:</strong> ${esc(item.contactInfo)}
         ${item.description ? `<br/><strong>Note:</strong> ${esc(item.description)}` : ''}
+        ${item.status === 'Claimed' ? `<br/><strong>Claimed by:</strong> ${esc(item.claimedBy || '—')}<br/><strong>Contact:</strong> ${esc(item.claimedContact || '—')}<br/><strong>Claimed on:</strong> ${item.claimedOn ? new Date(item.claimedOn).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}` : ''}
       </div>
       ${canManage ? `<div class="card-actions">
         <button class="btn btn-accent" onclick="markClaimed('${item._id}')" ${isClaimed ? 'disabled' : ''}>
@@ -349,6 +381,102 @@ function renderCards() {
       </div>` : ''}
     </div>`;
   }).join('');
+}
+
+async function fetchMyReports(name) {
+  try {
+    const res = await fetch(`${API}/mine?name=${encodeURIComponent(name)}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const items = await res.json();
+    myReportsName = name;
+    myReportsItems = items;
+    renderMyReports();
+  } catch (err) {
+    console.error('My reports error:', err);
+    showToast('Failed to load reports.', 'error');
+  }
+}
+
+function renderMyReports() {
+  const results = document.getElementById('my-reports-results');
+  const heading = document.getElementById('my-reports-heading');
+  const empty = document.getElementById('my-reports-empty');
+  const grid = document.getElementById('my-reports-cards');
+  if (results) results.style.display = 'block';
+  if (heading) heading.textContent = `My Reports — ${myReportsName}`;
+  if (!grid || !empty) return;
+
+  if (!myReportsItems.length) {
+    empty.style.display = 'block';
+    grid.innerHTML = '';
+    return;
+  }
+
+  empty.style.display = 'none';
+  grid.innerHTML = myReportsItems.map(item => {
+    const statusClass = item.status === 'Lost' ? 'badge-lost' : item.status === 'Found' ? 'badge-found' : 'badge-claimed';
+    const date = item.dateReported ? new Date(item.dateReported).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+    return `<div class="card">
+      <div class="card-header">
+        <span class="card-title">${esc(item.itemName)}</span>
+        <span class="badge ${statusClass}">${esc(item.status)}</span>
+      </div>
+      <span class="badge badge-cat">${esc(item.category)}</span>
+      <div class="card-meta">
+        <strong>Date:</strong> ${date}<br/>
+        <strong>Reported by:</strong> ${esc(item.reporterName)}<br/>
+        <strong>Contact:</strong> ${esc(item.contactInfo)}
+        ${item.description ? `<br/><strong>Note:</strong> ${esc(item.description)}` : ''}
+        ${item.status === 'Claimed' ? `<br/><strong>Claimed by:</strong> ${esc(item.claimedBy || '—')}<br/><strong>Contact:</strong> ${esc(item.claimedContact || '—')}<br/><strong>Claimed on:</strong> ${item.claimedOn ? new Date(item.claimedOn).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}` : ''}
+      </div>
+      <div class="card-actions">
+        <button class="btn btn-accent" onclick="editMyReport('${item._id}')">Edit</button>
+        <button class="btn btn-danger" onclick="deleteItem('${item._id}')">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function editMyReport(id) {
+  const item = myReportsItems.find(entry => entry._id === id);
+  if (!item) {
+    showToast('Report not found.', 'error');
+    return;
+  }
+
+  const itemName = prompt('Item name:', item.itemName);
+  if (itemName === null) return;
+  const contactInfo = prompt('Contact info:', item.contactInfo);
+  if (contactInfo === null) return;
+  const category = prompt('Category (Electronics, ID/Cards, Keys, Clothing, Books, Other):', item.category);
+  if (category === null) return;
+  const status = prompt('Status (Lost, Found, Claimed):', item.status);
+  if (status === null) return;
+  const description = prompt('Description:', item.description || '');
+  if (description === null) return;
+
+  const updates = {
+    itemName: itemName.trim() || item.itemName,
+    contactInfo: contactInfo.trim() || item.contactInfo,
+    category: category.trim() || item.category,
+    status: status.trim() || item.status,
+    description: description.trim(),
+  };
+
+  try {
+    const res = await fetch(`${API}/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(updates),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    showToast('Report updated successfully.');
+    await fetchItems();
+    await fetchMyReports(myReportsName);
+  } catch (err) {
+    console.error('Edit report error:', err);
+    showToast('Failed to update report.', 'error');
+  }
 }
 
 function esc(str) { const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; }
@@ -377,11 +505,21 @@ function renderAdmin() {
 
 /* ── Actions ── */
 async function markClaimed(id) {
+  const claimedBy = prompt('Name of the person who claimed the item:');
+  if (claimedBy === null) return;
+  const claimedContact = prompt('Contact of the person who claimed the item:');
+  if (claimedContact === null) return;
+
   try {
     const res = await fetch(`${API}/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
-      body: JSON.stringify({ status: 'Claimed' }),
+      body: JSON.stringify({
+        status: 'Claimed',
+        claimedBy: claimedBy.trim(),
+        claimedContact: claimedContact.trim(),
+        claimedOn: new Date().toISOString(),
+      }),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     showToast('Item marked as claimed!');
@@ -401,6 +539,9 @@ async function deleteItem(id) {
     showToast('Item deleted.');
     await fetchItems();
     renderAdmin();
+    if (myReportsName) {
+      await fetchMyReports(myReportsName);
+    }
   } catch (err) { console.error('Delete error:', err); showToast('Failed to delete item', 'error'); }
 }
 
